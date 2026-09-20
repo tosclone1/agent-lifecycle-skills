@@ -1,0 +1,15 @@
+schema_version: 1
+lifecycle: stabilizing
+required:
+- continuity-reviewer
+- regression-guard
+- code-review
+- production-validation
+preferred:
+- diagnosing-bugs
+- deployment-safety
+rules:
+  prefer_reuse_over_replace: true
+  require_runtime_evidence: true
+  require_regression_check: true
+  architecture_exploration_allowed: false

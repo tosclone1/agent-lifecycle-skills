@@ -1,0 +1,18 @@
+schema_version: 1
+lifecycle: production
+required:
+- continuity-reviewer
+- change-planner
+- regression-guard
+- code-review
+- production-validation
+- deployment-safety
+preferred:
+- diagnosing-bugs
+- reconstruct-system
+rules:
+  prefer_reuse_over_replace: true
+  require_runtime_evidence: true
+  require_regression_check: true
+  architecture_exploration_allowed: false
+  speculative_refactor: false

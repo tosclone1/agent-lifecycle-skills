@@ -1,0 +1,15 @@
+schema_version: 1
+lifecycle: legacy
+required:
+- continuity-reviewer
+- reconstruct-system
+- regression-guard
+- diagnosing-bugs
+preferred:
+- code-review
+- production-validation
+rules:
+  prefer_reuse_over_replace: true
+  require_runtime_evidence: true
+  require_regression_check: true
+  architecture_exploration_allowed: false

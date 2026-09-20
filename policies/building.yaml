@@ -1,0 +1,14 @@
+schema_version: 1
+lifecycle: building
+required:
+- continuity-reviewer
+- change-planner
+- code-review
+- regression-guard
+preferred:
+- diagnosing-bugs
+rules:
+  prefer_reuse_over_replace: true
+  require_runtime_evidence: false
+  require_regression_check: true
+  architecture_exploration_allowed: true

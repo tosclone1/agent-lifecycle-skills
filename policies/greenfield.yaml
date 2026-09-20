@@ -1,0 +1,13 @@
+schema_version: 1
+lifecycle: greenfield
+required:
+- reconstruct-system
+- change-planner
+preferred:
+- continuity-reviewer
+- code-review
+rules:
+  prefer_reuse_over_replace: false
+  require_runtime_evidence: false
+  require_regression_check: false
+  architecture_exploration_allowed: true

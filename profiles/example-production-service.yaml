@@ -1,0 +1,15 @@
+schema_version: 1
+project:
+  id: example-production-service
+  name: Example Production Service
+  lifecycle: production
+skill_pack:
+  channel: stable
+  minimum_version: 0.1.0
+skills:
+  include:
+  - reconstruct-system
+  exclude: []
+context:
+  glossary: CONTEXT.md
+  adr_path: docs/adr

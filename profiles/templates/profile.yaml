@@ -1,0 +1,14 @@
+schema_version: 1
+project:
+  id: CHANGE_ME
+  name: CHANGE_ME
+  lifecycle: greenfield
+skill_pack:
+  channel: stable
+  minimum_version: 1.0.0
+skills:
+  include: []
+  exclude: []
+context:
+  glossary: CONTEXT.md
+  adr_path: docs/adr
