@@ -140,6 +140,120 @@ def test_resolution():
         )
 
 
+# Deterministic expected resolution for each lifecycle, pinned to the current
+# intentional behavior. With a minimal synthetic profile (no include, no
+# exclude) the resolver selects: GLOBAL_SKILLS + policy required + policy
+# preferred. These are explicit literals on purpose (not recomputed): if a
+# lifecycle policy or the resolver changes, this test fails so the drift is
+# reviewed deliberately. Update a set here only when the change is intended.
+EXPECTED_LIFECYCLE_RESOLUTION = {
+    "greenfield": {
+        "change-planner",
+        "code-review",
+        "continuity-reviewer",
+        "handoff",
+        "reconstruct-system",
+    },
+    "building": {
+        "change-planner",
+        "code-review",
+        "continuity-reviewer",
+        "diagnosing-bugs",
+        "handoff",
+        "regression-guard",
+    },
+    "stabilizing": {
+        "change-planner",
+        "code-review",
+        "continuity-reviewer",
+        "deployment-safety",
+        "diagnosing-bugs",
+        "handoff",
+        "production-validation",
+        "regression-guard",
+    },
+    "production": {
+        "change-planner",
+        "code-review",
+        "continuity-reviewer",
+        "deployment-safety",
+        "diagnosing-bugs",
+        "handoff",
+        "production-validation",
+        "reconstruct-system",
+        "regression-guard",
+    },
+    "legacy": {
+        "change-planner",
+        "code-review",
+        "continuity-reviewer",
+        "diagnosing-bugs",
+        "handoff",
+        "production-validation",
+        "reconstruct-system",
+        "regression-guard",
+    },
+}
+
+
+def _minimal_profile(lifecycle, include=(), exclude=()):
+    """Build a completely synthetic profile for regression testing."""
+    return {
+        "schema_version": 1,
+        "project": {
+            "id": "fixture-" + lifecycle,
+            "name": "Fixture " + lifecycle.capitalize(),
+            "lifecycle": lifecycle,
+        },
+        "skills": {"include": list(include), "exclude": list(exclude)},
+    }
+
+
+def test_lifecycle_regression_fixtures():
+    """Pin the exact resolved skill set for every lifecycle so that an
+    unintended lifecycle-policy or resolver change fails CI. Uses only
+    synthetic, in-memory profiles (no private/internal data)."""
+    cli = load_cli()
+    known = cli.all_skills()
+    with tempfile.TemporaryDirectory() as tmp:
+        tmp = Path(tmp)
+        for lc, expected in EXPECTED_LIFECYCLE_RESOLUTION.items():
+            check(
+                f"fixture {lc}: pinned skills all known",
+                expected <= known,
+                f"unknown: {sorted(expected - known)}",
+            )
+            profile = _minimal_profile(lc)
+            path = tmp / (lc + ".profile.yaml")
+            path.write_text(yaml.safe_dump(profile), encoding="utf-8")
+            resolved_profile, _policy, selected = cli.resolve(path)
+            check(
+                f"fixture {lc}: lifecycle selected",
+                resolved_profile["project"]["lifecycle"] == lc,
+            )
+            got = set(selected)
+            missing = expected - got
+            extra = got - expected
+            check(
+                f"fixture {lc}: resolved set == pinned ({len(expected)} skills)",
+                got == expected,
+                f"missing={sorted(missing)} extra={sorted(extra)}",
+            )
+        # Exclusion is respected: drop a preferred skill from production.
+        lc, excluded_skill = "production", "reconstruct-system"
+        expected_minus = EXPECTED_LIFECYCLE_RESOLUTION[lc] - {excluded_skill}
+        profile = _minimal_profile(lc, exclude=[excluded_skill])
+        path = tmp / (lc + "-exclude.profile.yaml")
+        path.write_text(yaml.safe_dump(profile), encoding="utf-8")
+        _rp, _po, selected = cli.resolve(path)
+        got = set(selected)
+        check(
+            f"fixture {lc}: exclusion removes {excluded_skill}",
+            excluded_skill not in got and got == expected_minus,
+            f"got={sorted(got)} expected={sorted(expected_minus)}",
+        )
+
+
 def test_activation_preserves_unmanaged():
     cli = load_cli()
     with tempfile.TemporaryDirectory() as tmp:
@@ -260,6 +374,7 @@ def main():
     test_profiles_parse()
     test_policy_references()
     test_resolution()
+    test_lifecycle_regression_fixtures()
     test_activation_preserves_unmanaged()
     test_activation_manifest_scoped_cleanup()
     test_forbidden_identifiers()
