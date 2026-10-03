@@ -86,6 +86,8 @@ Two synthetic example profiles are included under `profiles/`:
 
 They exist only to demonstrate resolution and activation; copy
 `profiles/templates/profile.yaml` as the starting point for a real project.
+See `docs/profiles.md` for lifecycle selection, required fields, and
+`include`/`exclude` semantics.
 
 
 ## Quick Start (5-10 minutes)
@@ -120,8 +122,9 @@ user-managed skills are left untouched. Real directories are used instead of
 symlinks for reliable discovery across environments.
 
 To configure your own project, copy `profiles/templates/profile.yaml` to
-`.agent-skills/profile.yaml` in the project, set its lifecycle stage, and
-re-run `activate`.
+`.agent-skills/profile.yaml`, set its lifecycle stage and any
+`include`/`exclude` skills, then re-run `activate`. See `docs/profiles.md`
+for the full guide.
 
 ## Commands
 
@@ -170,6 +173,7 @@ pack must never contain project secrets or operational facts.
 skills/     SKILL.md definitions (the pack content)
 policies/   lifecycle policies (greenfield..legacy)
 profiles/   synthetic example profiles + template
+docs/       contributor guides (e.g. profiles.md)
 schemas/    JSON schemas for profiles and policies
 shared/     shared reference docs (change classes, evidence policy, ...)
 scripts/    agent_skills.py -- resolve/validate/activate CLI

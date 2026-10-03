@@ -90,15 +90,20 @@ def test_profiles_parse():
     lifecycles = set(
         schema["properties"]["project"]["properties"]["lifecycle"]["enum"]
     )
-    for profile_path in sorted((ROOT / "profiles").glob("*.yaml")):
+    profile_paths = sorted((ROOT / "profiles").glob("*.yaml"))
+    profile_paths.append(ROOT / "profiles" / "templates" / "profile.yaml")
+    for profile_path in profile_paths:
         try:
             profile = yaml.safe_load(profile_path.read_text(encoding="utf-8"))
+            project = profile.get("project", {}) if isinstance(profile, dict) else {}
             ok = (
                 isinstance(profile, dict)
                 and profile.get("schema_version") == 1
-                and profile["project"]["lifecycle"] in lifecycles
-                and isinstance(profile["skills"].get("include"), list)
-                and isinstance(profile["skills"].get("exclude"), list)
+                and isinstance(project.get("id"), str) and project["id"]
+                and isinstance(project.get("name"), str) and project["name"]
+                and project.get("lifecycle") in lifecycles
+                and isinstance(profile.get("skills", {}).get("include"), list)
+                and isinstance(profile.get("skills", {}).get("exclude"), list)
             )
         except Exception as exc:  # noqa: BLE001
             ok = False
@@ -254,6 +259,31 @@ def test_lifecycle_regression_fixtures():
         )
 
 
+def test_profile_include_exclude_semantics():
+    """Documented include/exclude behavior (docs/profiles.md): an include that
+    adds a skill the policy does not select, and an exclude that removes a
+    global skill. Exclusions apply after the union."""
+    cli = load_cli()
+    prof = _minimal_profile(
+        "greenfield", include=["regression-guard"], exclude=["handoff"]
+    )
+    with tempfile.TemporaryDirectory() as tmp:
+        p = Path(tmp) / "sem.profile.yaml"
+        p.write_text(yaml.safe_dump(prof), encoding="utf-8")
+        _rp, _po, selected = cli.resolve(p)
+        got = set(selected)
+        expected = (
+            EXPECTED_LIFECYCLE_RESOLUTION["greenfield"] | {"regression-guard"}
+        ) - {"handoff"}
+        check("include/exclude: include adds regression-guard", "regression-guard" in got)
+        check("include/exclude: exclude removes global handoff", "handoff" not in got)
+        check(
+            "include/exclude: resolves to formula result",
+            got == expected,
+            f"got={sorted(got)} expected={sorted(expected)}",
+        )
+
+
 def test_activation_preserves_unmanaged():
     cli = load_cli()
     with tempfile.TemporaryDirectory() as tmp:
@@ -375,6 +405,7 @@ def main():
     test_policy_references()
     test_resolution()
     test_lifecycle_regression_fixtures()
+    test_profile_include_exclude_semantics()
     test_activation_preserves_unmanaged()
     test_activation_manifest_scoped_cleanup()
     test_forbidden_identifiers()
