@@ -173,6 +173,62 @@ def test_activation_preserves_unmanaged():
             os.environ.pop("CODEX_HOME", None)
 
 
+def test_activation_manifest_scoped_cleanup():
+    """A skill this pack previously installed must be removed from the target
+    once it falls out of the resolved set, while unmanaged user skills are left
+    alone (manifest-scoped cleanup; exercises shutil.rmtree across platforms).
+    """
+    cli = load_cli()
+    with tempfile.TemporaryDirectory() as tmp:
+        tmp = Path(tmp)
+        target = tmp / "codex_home" / "skills"
+        target.mkdir(parents=True)
+        os.environ["CODEX_HOME"] = str(tmp / "codex_home")
+        try:
+            (target / "user-skill").mkdir()
+            (target / "user-skill" / "SKILL.md").write_text(
+                "---\nname: user-skill\ndescription: user managed\n---\n",
+                encoding="utf-8",
+            )
+            # production profile resolves reconstruct-system; building does not.
+            with_skill = ROOT / "profiles" / "example-production-service.yaml"
+            without_skill = ROOT / "profiles" / "example-web-app.yaml"
+
+            cli.activate(with_skill)
+            managed = set(
+                (target / cli.MANIFEST_NAME).read_text(encoding="utf-8")
+                .splitlines()
+            )
+            check(
+                "cleanup: installed skill recorded in manifest",
+                "reconstruct-system" in managed,
+            )
+            check(
+                "cleanup: installed skill directory present",
+                (target / "reconstruct-system" / "SKILL.md").exists(),
+            )
+
+            cli.activate(without_skill)
+            managed = set(
+                (target / cli.MANIFEST_NAME).read_text(encoding="utf-8")
+                .splitlines()
+            )
+            check(
+                "cleanup: deselected skill removed from manifest",
+                "reconstruct-system" not in managed,
+            )
+            check(
+                "cleanup: deselected skill directory removed from target",
+                not (target / "reconstruct-system").exists(),
+            )
+            check(
+                "cleanup: unmanaged user skill survives deselection",
+                (target / "user-skill" / "SKILL.md").exists(),
+            )
+        finally:
+            os.environ.pop("CODEX_HOME", None)
+
+
 def test_forbidden_identifiers():
     hits = []
     for path in sorted(ROOT.rglob("*")):
@@ -205,6 +261,7 @@ def main():
     test_policy_references()
     test_resolution()
     test_activation_preserves_unmanaged()
+    test_activation_manifest_scoped_cleanup()
     test_forbidden_identifiers()
     test_no_env_files()
     if FAILURES:
