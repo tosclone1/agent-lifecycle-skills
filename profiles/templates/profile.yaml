@@ -1,14 +1,28 @@
+# Project profile.
+# Copy this file to `.agent-skills/profile.yaml` in your project, then edit it.
+# Only `project.lifecycle` and `skills.{include,exclude}` affect resolution;
+# the remaining fields are optional metadata. See docs/profiles.md for details.
 schema_version: 1
 project:
+  # Unique identifier for this project (any string you choose).
   id: CHANGE_ME
+  # Human-readable name.
   name: CHANGE_ME
+  # Lifecycle stage -- pick the one that best fits the repository:
+  # greenfield | building | stabilizing | production | legacy
+  # Each value loads a matching policy from policies/<lifecycle>.yaml.
   lifecycle: greenfield
 skill_pack:
+  # Optional metadata (not used by the resolver).
   channel: stable
-  minimum_version: 1.0.0
+  minimum_version: 0.1.0
 skills:
+  # Extra skills you always want, on top of the lifecycle policy.
+  # Every name must exist in the pack, or resolution fails.
   include: []
+  # Skills to drop from the resolved set (applied after the policy union).
   exclude: []
 context:
+  # Optional metadata (not used by the resolver).
   glossary: CONTEXT.md
   adr_path: docs/adr
